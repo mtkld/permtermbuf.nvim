@@ -138,7 +138,7 @@ end
 local function toggle_terminal(program)
 	local term = terminals[program]
 	local term_buf = get_buf_by_name(term.buffer_name)
-
+	log("----Toggling terminal for program: " .. program)
 	-- If the terminal is already open, close it and cleanup
 	if term.win and vim.api.nvim_win_is_valid(term.win) then
 		-- Close terminal manually, indicating the program didn't exit naturally
@@ -148,6 +148,13 @@ local function toggle_terminal(program)
 		vim.cmd("stopinsert") -- Exit insert mode
 		--log("Close the permterm")
 		--vim.api.nvim_exec_autocmds("User", { pattern = "PermTermBufExit" })
+
+		log("Closed terminal for program: " .. program)
+		log("THE TYPE: " .. type(term.callback_post_toggle_out))
+		if term.callback_post_toggle_out and type(term.callback_post_toggle_out) == "function" then
+			log("Calling post toggle out callback for program: ")
+			cmd = term.callback_post_toggle_out(cmd)
+		end
 	else
 		-- Not open, so open it
 
@@ -230,6 +237,10 @@ local function toggle_terminal(program)
 		end
 
 		M.is_active = true
+
+		if term.callback_post_toggle_in and type(term.callback_post_toggle_in) == "function" then
+			cmd = term.callback_post_toggle_in(cmd)
+		end
 	end
 end
 
@@ -264,6 +275,8 @@ function M.setup(programs)
 			callback_on_exit = program.callback_on_exit, -- Store callback for each program
 			callback_pre_exec_cmd = program.callback_pre_exec_cmd, -- Store callback for each program
 			callback_post_exec_cmd = program.callback_post_exec_cmd, -- Store callback for each program
+			callback_post_toggle_out = program.callback_post_toggle_out, -- Store callback for each program
+			callback_post_toggle_in = program.callback_post_toggle_in, -- Store callback for each program
 			exited = false, -- Flag to track if program exited
 		}
 
